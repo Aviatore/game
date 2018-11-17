@@ -4,6 +4,7 @@ use Term::Screen;
 use Time::HiRes qw(usleep);
 use Storable qw(dclone);
 
+print "\e[?25l";
 $| = 1;
 my @buffer = ();
 my @buffer_2 = ();
@@ -20,10 +21,15 @@ for ( my $xx = 0; $xx < $x; $xx++ )
     {
       $buffer[$yy][$xx] = "|";
     }
-    elsif ( $yy == 0 or $yy == ($y - 1 ) )
+    elsif ( $yy == 0 )
     {
       $buffer[$yy][$xx] = "_";
     }
+		elsif ( $yy == ($y - 1 ) )
+    {
+      $buffer[$yy][$xx] = "-";
+    }
+
     else
     {
       $buffer[$yy][$xx] = " ";
@@ -35,13 +41,15 @@ for ( my $xx = 0; $xx < $x; $xx++ )
   }
 }
 
+my @lines = ();
 my @line = ();
-for ( my $i = 1; $i < ($y - 2); $i++ )
+for ( my $i = 1; $i < ($y - 1); $i++ )
 {
   push @line, [ ($i, $x - 2) ];
 }
+push @lines, \@line;
  write_buffer(\$scr, \@buffer, \@buffer_2, $x, $y);
- exit;
+ #exit;
 
 
 while(1)
@@ -53,13 +61,13 @@ while(1)
     $buffer[ $line[$index]->[0] ][ $line[$index]->[1] ] = " ";
     $index++;
   }
-
+	$index = 0;
   foreach my $pixel ( @line )
   {
     $line[$index]->[1]--;
     $index++;
   }
-
+	$index = 0;
   foreach my $pixel ( @line )
   {
     $buffer[ $line[$index]->[0] ][ $line[$index]->[1] ] = "#";
@@ -68,16 +76,16 @@ while(1)
 
   write_buffer(\$scr, \@buffer, \@buffer_2, $x, $y);
 
-  sleep 1;
+  usleep(80000);
 }
 
 sub write_buffer
 {
   my ( $scr, $buffer, $buffer_2, $x, $y ) = @_;
 
-  for ( my $xx = 0; $xx < $x; $xx++ )
+  for ( my $xx = 1; $xx < $x; $xx++ )
   {
-    for ( my $yy = 0; $yy < $y; $yy++ )
+    for ( my $yy = 1; $yy < $y; $yy++ )
     {
       if ( $$buffer[$yy][$xx] eq $$buffer_2[$yy][$xx] )
       {
@@ -85,9 +93,11 @@ sub write_buffer
       }
       else
       {
-        $$scr->at( $yy, $xx );
-        print $buffer[$yy][$xx];
-
+				#      $$scr->at( $yy, $xx );
+				my $y = $yy;
+				my $x = $xx;
+				print "\e[" . $y . ";" . $x . "H";
+				print $$buffer[$yy][$xx];
         $$buffer_2[$yy][$xx] = $$buffer[$yy][$xx]; 
       }
     }
