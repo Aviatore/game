@@ -3,6 +3,8 @@ use warnings;
 use Term::Screen;
 use Time::HiRes qw(usleep);
 use Storable qw(dclone);
+use lib ".";
+use Line;
 
 print "\e[?25l";
 $| = 1;
@@ -25,11 +27,10 @@ for ( my $xx = 0; $xx < $x; $xx++ )
     {
       $buffer[$yy][$xx] = "_";
     }
-		elsif ( $yy == ($y - 1 ) )
+	elsif ( $yy == ($y - 1 ) )
     {
       $buffer[$yy][$xx] = "-";
-    }
-
+    }	
     else
     {
       $buffer[$yy][$xx] = " ";
@@ -41,65 +42,90 @@ for ( my $xx = 0; $xx < $x; $xx++ )
   }
 }
 
-my @lines = ();
-my @line = ();
-for ( my $i = 1; $i < ($y - 1); $i++ )
-{
-  push @line, [ ($i, $x - 2) ];
-}
-push @lines, \@line;
- write_buffer(\$scr, \@buffer, \@buffer_2, $x, $y);
- #exit;
+my $line = Line->new(
+	buffer => \@buffer, 
+	row_num => $x, 
+	col_num => $y
+	);
 
 
+#$line->add_line();
+$line->add_pixel();
+
+write_buffer(\$scr, \@buffer, \@buffer_2, $x, $y);
+#exit;
+
+my $counter = 0;
 while(1)
 {
-  my $index = 0;
+	my $buffer_new = $line->move();
+	if ( $counter == 1 )
+	{
+		$line->add_pixel();
+		$counter = 0;
+	}
+	
+	
+	write_buffer_mod(\$scr, $buffer_new, \@buffer_2, $x, $y);
 
-  foreach my $pixel ( @line )
-  {
-    $buffer[ $line[$index]->[0] ][ $line[$index]->[1] ] = " ";
-    $index++;
-  }
-	$index = 0;
-  foreach my $pixel ( @line )
-  {
-    $line[$index]->[1]--;
-    $index++;
-  }
-	$index = 0;
-  foreach my $pixel ( @line )
-  {
-    $buffer[ $line[$index]->[0] ][ $line[$index]->[1] ] = "#";
-    $index++;
-  }
-
-  write_buffer(\$scr, \@buffer, \@buffer_2, $x, $y);
-
-  usleep(80000);
+	$counter++;
+	usleep(10000);
 }
 
-sub write_buffer
+sub line_creator
+{
+	
+}
+
+# Firstly, pixel is removed, then the new one is printed (assuming right to left movement);
+sub write_buffer_mod 
 {
   my ( $scr, $buffer, $buffer_2, $x, $y ) = @_;
 
-  for ( my $xx = 1; $xx < $x; $xx++ )
+  for ( my $xx = $x - 1; $xx > 0; $xx-- )
   {
-    for ( my $yy = 1; $yy < $y; $yy++ )
+    for ( my $yy = $y - 1; $yy > 0; $yy-- )
     {
       if ( $$buffer[$yy][$xx] eq $$buffer_2[$yy][$xx] )
       {
+		
         next;
       }
       else
       {
-				#      $$scr->at( $yy, $xx );
-				my $y = $yy;
-				my $x = $xx;
-				print "\e[" . $y . ";" . $x . "H";
-				print $$buffer[$yy][$xx];
+		print "\e[" . $yy . ";" . $xx . "H";
+		print $$buffer[$yy][$xx];
         $$buffer_2[$yy][$xx] = $$buffer[$yy][$xx]; 
       }
+#	  usleep(1000000);
+    }
+  }
+}
+
+# Firstly, new pixel is printed, then the old one is removed (assuming right to left movement);
+sub write_buffer
+{
+  my ( $scr, $buffer, $buffer_2, $x, $y ) = @_;
+
+  for ( my $xx = 0; $xx < $x; $xx++ )
+  {
+    for ( my $yy = 0; $yy < $y; $yy++ )
+    {
+      if ( $$buffer[$yy][$xx] eq $$buffer_2[$yy][$xx] )
+      {
+		
+        next;
+      }
+      else
+      {
+#		$$scr->at( $yy, $xx );
+		my $y = $yy;
+		my $x = $xx;
+		print "\e[" . $y . ";" . $x . "H";
+		print $$buffer[$yy][$xx];
+        $$buffer_2[$yy][$xx] = $$buffer[$yy][$xx]; 
+      }
+#	  usleep(10000);
     }
   }
 }
